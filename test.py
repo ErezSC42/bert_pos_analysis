@@ -1,8 +1,13 @@
 import os
+import json
 import torch
 import pandas as pd
 import transformers
-from utils import text_to_dataloader, tokenize_word
+import torch.nn as nn
+from torch.optim import Adam
+from models import BertProbeClassifer
+from utils import check_accuracy_classification
+from utils import text_to_dataloader, plot_confusion_matrix, calc_performance
 
 
 def txt_to_dataframe(data_path):
@@ -55,9 +60,46 @@ if __name__ == '__main__':
     df_dev = txt_to_dataframe(dev_path)
     df_test = txt_to_dataframe(test_path)
 
+    #train_len = len(df_train)
+    train_len = len(df_train)
+    test_len = len(df_dev)
+
     bert_tokenizer = transformers.BertTokenizer.from_pretrained("bert-base-uncased")
 
-    text_to_dataloader(df_train, "cuda", 32, bert_tokenizer, 256)
+    batch_size = 64
+
+    df_train = df_train.head(train_len)
+    df_dev = df_dev.head(test_len)
+
+    dataloader_train = text_to_dataloader(df_train, "cuda", batch_size, bert_tokenizer, 256)
+    dataloader_dev = text_to_dataloader(df_dev, "cuda", batch_size, bert_tokenizer, 256)
+    dataloader_test = text_to_dataloader(df_test, "cuda", batch_size, bert_tokenizer, 256)
+
+    model = BertProbeClassifer("cuda", 256, batch_size, "test_model", "bert-base-uncased", True, 18, None)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = Adam(model.parameters(), weight_decay=1e-3, lr=1e-4)
+
+    model.fit(
+        train_dataloader=dataloader_train,
+        train_len=train_len,
+        epochs=5,
+        criterion=criterion,
+        optimizer=optimizer,
+        verbose=True,
+        device="cuda",
+        test_dataloader=dataloader_dev,
+        test_len=test_len,
+        metric_func=check_accuracy_classification,
+        save_checkpoints=False,
+        model_save_threshold=0
+    )
+
+    # test
+    with open("pos_to_label.json", "rb") as fp:
+        label_list = list(json.load(fp).keys())
+        y_true, y_pred = calc_performance(model, dataloader_test)
+        plot_confusion_matrix(y_true, y_pred, normalize=True, label_list=label_list)
 
 
 

@@ -5,7 +5,9 @@ import datetime
 import numpy as np
 import transformers
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+from utils import calc_performance,calc_classification_metrics
 
 import warnings
 warnings.filterwarnings(action="ignore")
@@ -55,16 +57,22 @@ class BertWrapperModel(nn.Module):
             test_dataloader=None,
             test_len=None,
             use_nni=False,
-            metric_func=check_accuracy_classification,
+            metric_func=calc_classification_metrics,
             save_checkpoints=False,
             model_save_threshold=0.85) -> dict:
         self.train()
         results = dict()
         results["train_acc"] = list()
         results["train_loss"] = list()
+        results["train_precision"] = list()
+        results["train_recall"] = list()
+        results["train_f1"] = list()
         if test_dataloader is not None:
             results["test_acc"] = list()
             results["test_loss"] = list()
+            results["test_precision"] = list()
+            results["test_recall"] = list()
+            results["test_f1"] = list()
         self.to(device)
         if verbose:
             print("statring training...")
@@ -72,29 +80,40 @@ class BertWrapperModel(nn.Module):
             running_loss = 0.0
             for i, data in enumerate(tqdm.tqdm(train_dataloader)):  # mini-batch
                 self.train()
-                inputs, mask, labels = data
-                outputs = self(inputs, mask)
-                real_labels = torch.max(labels, 1)[1] # TODO important to change like this for multiclass
-                loss = criterion(outputs, real_labels) # TODO important to change like this for multiclass
+                inputs, mask, target_mask,labels = data
+                outputs = self(inputs, mask, target_mask)
+                loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
                 # print statistics
-                running_loss += loss.item()
-            train_loss, train_acc = metric_func(train_dataloader, self, "train", train_len, verbose=verbose, criterion=criterion, use_masks=self.use_attn_masks, drop_grad=self._drop_grad)
-            print(train_acc)
-            results["train_acc"].append(train_acc)
-            results["train_loss"].append(train_loss)
+                #running_loss += loss.item()
+            y_real, y_pred = calc_performance(self, train_dataloader)
+            acc, precision, recall, f1 = calc_classification_metrics(y_true=y_real, y_pred=y_pred)
+            if verbose:
+                print(f'\tEp #{epoch} | Train. Loss: {loss:.3f} | Acc: {acc * 100:.2f}% | Precision: {precision * 100:.2f}% | Recall: {recall * 100:.2f}% | F1: {f1 * 100:.2f}%')
+            results["train_acc"].append(acc)
+            results["train_loss"].append(loss)
+            results["train_precision"].append(precision)
+            results["train_recall"].append(recall)
+            results["train_f1"].append(f1)
             if test_dataloader is not None:
-                test_loss, test_acc = metric_func(test_dataloader, self, "test", test_len, verbose=verbose, criterion=criterion, use_masks=self.use_attn_masks, drop_grad=self._drop_grad)
-                results["test_acc"].append(test_acc)
-                results["test_loss"].append(test_loss)
-                if save_checkpoints and model_save_threshold <= test_acc:
-                    model_name = self.generate_model_save_name(test_acc)
+                y_real, y_pred = calc_performance(self, test_dataloader)
+                acc, precision, recall, f1 = calc_classification_metrics(y_true=y_real, y_pred=y_pred)
+                if verbose:
+                    print(
+                        f'\tEp #{epoch} | Val. Acc: {acc * 100:.2f}% | Precision: {precision * 100:.2f}% | Recall: {recall * 100:.2f}% | F1: {f1 * 100:.2f}%')
+                results["train_acc"].append(acc)
+                results["train_loss"].append(loss)
+                results["train_precision"].append(precision)
+                results["train_recall"].append(recall)
+                results["train_f1"].append(f1)
+                if save_checkpoints and model_save_threshold <= acc:
+                    model_name = self.generate_model_save_name(acc)
                     model_path = os.path.join("models", model_name)
                     torch.save(self, model_path)
             if use_nni:
-                nni.report_intermediate_result(test_acc)
+                nni.report_intermediate_result(acc)
         if verbose:
             print('Finished Training')
         return results
@@ -130,3 +149,65 @@ class BertWrapperModel(nn.Module):
 
     def count_trainable_parameters(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+
+class BertProbeClassifer(BertWrapperModel):
+    def __init__(
+            self,
+            device : torch.device,
+            max_sequence_len : int,
+            inference_batch_size : int,
+            model_name : str,
+            bert_pretrained_model: str,
+            freeze_bert: bool,
+            class_count: int,
+            bert_config: transformers.BertConfig = None):
+        super(BertProbeClassifer, self).__init__(
+            device=device,
+            max_sequence_len=max_sequence_len,
+            inference_batch_size=inference_batch_size,
+            model_name=model_name,
+            bert_pretrained_model=bert_pretrained_model,
+            freeze_bert=freeze_bert,
+            bert_config=bert_config,
+        )
+        self.class_count = class_count
+        self.linear = nn.Linear(in_features=768, out_features=class_count)
+
+    @staticmethod
+    def entity_average(hidden_output, e_mask):
+        """
+        Average the entity hidden state vectors (H_i ~ H_j)
+        :param hidden_output: [batch_size, j-i+1, dim]
+        :param e_mask: [batch_size, max_seq_len]
+                e.g. e_mask[0] == [0, 0, 0, 1, 1, 1, 0, 0, ... 0]
+        :return: [batch_size, dim]
+        """
+        e_mask_unsqueeze = e_mask.unsqueeze(1)  # [b, 1, j-i+1]
+        length_tensor = (e_mask != 0).sum(dim=1).unsqueeze(1)  # [batch_size, 1]
+
+        sum_vector = torch.bmm(e_mask_unsqueeze.float(), hidden_output).squeeze(1)  # [b, 1, j-i+1] * [b, j-i+1, dim] = [b, 1, dim] -> [b, dim]
+        avg_vector = sum_vector.float() / length_tensor.float()  # broadcasting
+        return avg_vector
+
+    @staticmethod
+    def entity_sum(hidden_output, e_mask):
+        """
+        Average the entity hidden state vectors (H_i ~ H_j)
+        :param hidden_output: [batch_size, j-i+1, dim]
+        :param e_mask: [batch_size, max_seq_len]
+                e.g. e_mask[0] == [0, 0, 0, 1, 1, 1, 0, 0, ... 0]
+        :return: [batch_size, dim]
+        """
+        e_mask_unsqueeze = e_mask.unsqueeze(1)  # [b, 1, j-i+1]
+        sum_vector = torch.bmm(e_mask_unsqueeze.float(), hidden_output).squeeze(1)  # [b, 1, j-i+1] * [b, j-i+1, dim] = [b, 1, dim] -> [b, dim]
+        avg_vector = sum_vector.float()  # broadcasting
+        return avg_vector
+
+    def forward(self, input_ids, attn_mask, target_word_mask):
+        embeddings, _ = self.bert(input_ids, attn_mask)
+        target_word_embedding = self.entity_sum(embeddings, target_word_mask)
+        return F.log_softmax(self.linear(target_word_embedding), dim=1)
+
+
+
