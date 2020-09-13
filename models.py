@@ -57,7 +57,6 @@ class BertWrapperModel(nn.Module):
             test_dataloader=None,
             test_len=None,
             use_nni=False,
-            metric_func=calc_classification_metrics,
             save_checkpoints=False,
             model_save_threshold=0.85) -> dict:
         self.train()

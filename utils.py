@@ -54,18 +54,21 @@ def text_to_dataloader(
     assert "text" in sentences_df.columns
     assert "label" in sentences_df.columns
 
-    sentences_df["label"] = sentences_df["label"].astype("category")
+    LABELS_TO_DROP = ["X", "_"]
+    df = sentences_df[~sentences_df["label"].isin(LABELS_TO_DROP)]
+    df["label"] = df["label"].astype("category")
     with open("pos_to_label.json", "rb") as fp:
         pos_to_label_dict = json.load(fp)
-    sentences_df["label_idx"] = sentences_df["label"].map(pos_to_label_dict)
-    sentences_df["text_ids"] = sentences_df["text"].apply(lambda x: preprocess_text(x, bert_tokenizer,max_sequence_len))
-    sentences_df["attn_mask"] = sentences_df["text_ids"].apply(lambda x: extract_attn_mask(x, max_sequence_len))
-    sentences_df["query_mask"] = sentences_df.apply(lambda row: tokenize_word(row.text_ids, row.word, bert_tokenizer), axis=1)
 
-    sentences_idx_tensor = torch.LongTensor(np.stack(sentences_df["text_ids"].values)).to(device)
-    sentences_mask_tensor = torch.LongTensor(np.stack(sentences_df["attn_mask"].values)).to(device)
-    query_mask_tensor = torch.LongTensor(np.stack(sentences_df["query_mask"].values)).to(device)
-    label_tensor = torch.LongTensor(np.stack(sentences_df["label_idx"].values)).to(device)
+    df["label_idx"] = df["label"].map(pos_to_label_dict)
+    df["text_ids"] = df["text"].apply(lambda x: preprocess_text(x, bert_tokenizer,max_sequence_len))
+    df["attn_mask"] = df["text_ids"].apply(lambda x: extract_attn_mask(x, max_sequence_len))
+    df["query_mask"] = df.apply(lambda row: tokenize_word(row.text_ids, row.word, bert_tokenizer), axis=1)
+
+    sentences_idx_tensor = torch.LongTensor(np.stack(df["text_ids"].values)).to(device)
+    sentences_mask_tensor = torch.LongTensor(np.stack(df["attn_mask"].values)).to(device)
+    query_mask_tensor = torch.LongTensor(np.stack(df["query_mask"].values)).to(device)
+    label_tensor = torch.LongTensor(np.stack(df["label_idx"].values)).to(device)
 
     # build dataset
     inference_tensor_dataset = TensorDataset(
@@ -77,7 +80,7 @@ def text_to_dataloader(
 
     # build dataloader
     inference_dataloader = DataLoader(inference_tensor_dataset, batch_size=inference_batch_size)
-    return inference_dataloader
+    return df, inference_dataloader
 
 
 
@@ -86,14 +89,17 @@ def plot_confusion_matrix(
         y_pred,
         normalize=False,
         cmap=plt.cm.Blues,
-        label_list = None):
+        label_list = None,
+        visible=True,
+        savepath=None):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
     cm = confusion_matrix(y_true, y_pred)
     acc = accuracy_score(y_true, y_pred)
-    title = "Confusion Matrix, acc: {:.2f}".format(acc)
+    f1 = f1_score(y_true, y_pred, average="micro")
+    title = f"Confusion Matrix, Acc: {acc:.2f}, F1: {f1:.2f}"
 
 
     if label_list == None:
@@ -105,7 +111,7 @@ def plot_confusion_matrix(
         print("Normalized confusion matrix")
     else:
         print('Confusion matrix, without normalization')
-    plt.figure()
+    plt.figure(figsize=(13,13))
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
@@ -123,7 +129,11 @@ def plot_confusion_matrix(
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    plt.show()
+    if savepath is not None:
+        plt.savefig(savepath)
+    if visible:
+        plt.show()
+    return acc, f1
 
 
 
