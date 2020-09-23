@@ -1,0 +1,10 @@
+{
+    "hidden_layers_count": {
+      "_type" : "choice",
+      "_value": [1,2,3,4,5,6,7,8,9,10,11,12]
+    },
+    "seed": {
+      "_type": "choice",
+      "_value": [1,5,52,74,23]
+    }
+}

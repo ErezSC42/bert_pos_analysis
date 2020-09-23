@@ -1,0 +1,20 @@
+authorName: erezsc
+experimentName: Bert POS probing classifier
+trialConcurrency: 2
+maxExecDuration: 96h
+maxTrialNum: 500
+#choice: local, remote, pai
+trainingServicePlatform: local
+searchSpacePath: bert_probing_pos_search_space.json
+#choice: true, false
+useAnnotation: false
+tuner:
+  #choice: TPE, Random, Anneal, Evolution, BatchTuner, MetisTuner, GPTuner
+  #SMAC (SMAC should be installed through nnictl)
+  builtinTunerName: TPE
+  classArgs:
+    #choice: maximize, minimize
+    optimize_mode: maximize
+trial:
+  command: python3 train.py --epochs 2 --class-count 16 --freeze-bert --use-nni --batch-size 64
+  codeDir: .

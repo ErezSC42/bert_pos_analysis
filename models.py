@@ -1,4 +1,5 @@
 import os
+import nni
 import tqdm
 import torch
 import datetime
@@ -79,7 +80,7 @@ class BertWrapperModel(nn.Module):
             running_loss = 0.0
             for i, data in enumerate(tqdm.tqdm(train_dataloader)):  # mini-batch
                 self.train()
-                inputs, mask, target_mask,labels = data
+                inputs, mask, target_mask, labels = data
                 outputs = self(inputs, mask, target_mask)
                 loss = criterion(outputs, labels)
                 loss.backward()
@@ -98,21 +99,27 @@ class BertWrapperModel(nn.Module):
             results["train_f1"].append(f1)
             if test_dataloader is not None:
                 y_real, y_pred = calc_performance(self, test_dataloader)
-                acc, precision, recall, f1 = calc_classification_metrics(y_true=y_real, y_pred=y_pred)
+                test_acc, precision, recall, test_f1 = calc_classification_metrics(y_true=y_real, y_pred=y_pred)
                 if verbose:
                     print(
-                        f'\tEp #{epoch} | Val. Acc: {acc * 100:.2f}% | Precision: {precision * 100:.2f}% | Recall: {recall * 100:.2f}% | F1: {f1 * 100:.2f}%')
-                results["train_acc"].append(acc)
-                results["train_loss"].append(loss)
-                results["train_precision"].append(precision)
-                results["train_recall"].append(recall)
-                results["train_f1"].append(f1)
+                        f'\tEp #{epoch} | Val. A456'
+                        f'cc: {acc * 100:.2f}% | Precision: {precision * 100:.2f}% | Recall: {recall * 100:.2f}% | F1: {f1 * 100:.2f}%')
+                results["test_acc"].append(acc)
+                results["test_loss"].append(loss)
+                results["test_precision"].append(precision)
+                results["test_recall"].append(recall)
+                results["test_f1"].append(f1)
                 if save_checkpoints and model_save_threshold <= acc:
                     model_name = self.generate_model_save_name(acc)
                     model_path = os.path.join("models", model_name)
                     torch.save(self, model_path)
             if use_nni:
-                nni.report_intermediate_result(acc)
+                nni.report_intermediate_result({
+                    "train_acc": acc,
+                    "train_f1": f1,
+                    "default": test_acc,
+                    "test_f1": test_f1
+                })
         if verbose:
             print('Finished Training')
         return results

@@ -11,6 +11,48 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import recall_score, accuracy_score, precision_score, f1_score, confusion_matrix
 
 
+def txt_to_dataframe(data_path):
+    '''
+    read UD text file and convert to df format
+    '''
+
+    HEADER_CONST = "# sent_id = "
+    TEXT_CONST = "# text = "
+    STOP_CONST = "\n"
+    WORD_OFFSET = 1
+    LABEL_OFFSET = 3
+
+    with open(data_path, "r") as fp:
+        df = pd.DataFrame(
+            columns={
+                "text",
+                "word",
+                "label"
+            }
+        )
+        for line in fp.readlines():
+            if TEXT_CONST in line:
+                words_list = []
+                labels_list = []
+                text = line.split(TEXT_CONST)[1]
+                # this is a new text, need to parse all the words in it
+            elif line is not STOP_CONST and HEADER_CONST not in line:
+                temp_list = line.split("\t")
+                words_list.append(temp_list[WORD_OFFSET])
+                labels_list.append(temp_list[LABEL_OFFSET])
+            if line == STOP_CONST:
+                # this is the end of the text, adding to df
+                cur_df = pd.DataFrame(
+                    {
+                        "text": len(words_list) * [text],
+                        "word": words_list,
+                        "label": labels_list
+                    }
+                )
+                df = pd.concat([df, cur_df])
+        return df
+
+
 def tokenize_word(sentence_ids, target_word, bert_tokenizer):
     word_mask = len(sentence_ids) * [0]
     word_ids = bert_tokenizer.convert_tokens_to_ids(bert_tokenizer.tokenize(target_word))
@@ -69,7 +111,6 @@ def text_to_dataloader(
     sentences_mask_tensor = torch.LongTensor(np.stack(df["attn_mask"].values)).to(device)
     query_mask_tensor = torch.LongTensor(np.stack(df["query_mask"].values)).to(device)
     label_tensor = torch.LongTensor(np.stack(df["label_idx"].values)).to(device)
-
     # build dataset
     inference_tensor_dataset = TensorDataset(
         sentences_idx_tensor.to(device=device),
@@ -160,9 +201,9 @@ def check_accuracy_classification(data_loader: DataLoader,model,name, total, cri
 
 def calc_classification_metrics(y_true, y_pred):
     acc = accuracy_score(y_true, y_pred)
-    precision = precision_score(y_true, y_pred, average="macro")
-    recall = recall_score(y_true, y_pred, average="macro")
-    f1 = f1_score(y_true, y_pred, average="macro")
+    precision = precision_score(y_true, y_pred, average="micro")
+    recall = recall_score(y_true, y_pred, average="micro")
+    f1 = f1_score(y_true, y_pred, average="micro")
     return acc, precision, recall, f1
 
 
