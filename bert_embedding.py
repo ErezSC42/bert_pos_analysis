@@ -28,8 +28,13 @@ class BertEmbeddingExtractor():
         # bert
         self.bert_layer = bert_layer
         self.bert_config = transformers.BertConfig(num_hidden_layers=bert_layer)
-        self.bert_tokenizer = transformers.BertTokenizer.from_pretrained(bert_base_model)
-        self.bert_model = transformers.BertModel.from_pretrained(bert_base_model)
+        self.bert_tokenizer = transformers.BertTokenizer.from_pretrained(
+            pretrained_model_name_or_path=self.bert_base_model
+        )
+        self.bert_model = transformers.BertModel.from_pretrained(
+            config=self.bert_config,
+            pretrained_model_name_or_path=bert_base_model
+        )
 
 
     def extract_embedding(self, dataloader : DataLoader, agg_func: str) -> pd.DataFrame:
@@ -78,16 +83,15 @@ class BertEmbeddingExtractor():
         embedding_df = pd.DataFrame({
             "word": orig_words_list,
             "label_idx": labels,
-            "embedding": contextual_embeddings
         })
+        vector_df = pd.DataFrame.from_records(contextual_embeddings)
+        embedding_df = pd.concat([embedding_df, vector_df], axis=1)
+        embedding_df[embedding_df["word"] != ""]
 
         with open("pos_to_label.json", "rb") as fp:
             pos_to_label_dict = json.load(fp)
             inv_map = {v: k for k, v in pos_to_label_dict.items()}
             embedding_df["label"] = embedding_df["label_idx"].map(inv_map)
-
-        embedding_df["embedding_shape"] = embedding_df["embedding"].apply(lambda x: x.shape)
-        embedding_df = embedding_df[embedding_df["embedding_shape"] != (0, 768)]
 
         return embedding_df
 
