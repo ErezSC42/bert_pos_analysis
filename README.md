@@ -6,10 +6,15 @@ we have used the Universal Dependencies English POS dataset.
 
 ### Data Exploration
 Every word in the sentences is tagged
-<table>
-<tr><th> Train </th><th>Dev</th><th>Test</th></tr>
 
-<tr><td>
+![sentence len dist](images/sent_len_dist_hist.png)
+
+
+<table>
+<tr><th> Train </th><th> Dev </th><th> Test </th></tr>
+
+<tr>
+<td>
 
 | Type   |   Count |
 |:-------|--------:|
