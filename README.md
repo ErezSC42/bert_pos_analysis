@@ -4,7 +4,88 @@ The purpose of this project is to explore the linguistic knowledge embedded in N
 ## Data
 we have used the Universal Dependencies English POS dataset.
 
+### Data Exploration
+Every word in the sentences is tagged
+<table>
+<tr><th> Train </th><th>Dev</th><th>Test</th></tr>
+
+<tr><td>
+
+| Type   |   Count |
+|:-------|--------:|
+| NOUN   |    9249 |
+| ADP    |    5220 |
+| PUNCT  |    5105 |
+| DET    |    4616 |
+| VERB   |    4126 |
+| ADJ    |    3410 |
+| AUX    |    2076 |
+| PROPN  |    2033 |
+| PRON   |    1734 |
+| ADV    |    1707 |
+| CCONJ  |    1472 |
+| PART   |    1168 |
+| NUM    |     787 |
+| SCONJ  |     627 |
+| X      |     140 |
+| SYM    |      42 |
+| _      |      27 |
+| INTJ   |       6 |
+
+</td><td>
+
+| Type   |   Count |
+|:-------|--------:|
+| NOUN   |     568 |
+| PUNCT  |     353 |
+| ADP    |     297 |
+| VERB   |     276 |
+| DET    |     266 |
+| ADJ    |     210 |
+| PRON   |     153 |
+| AUX    |     124 |
+| ADV    |     108 |
+| PROPN  |     107 |
+| CCONJ  |      88 |
+| NUM    |      60 |
+| PART   |      56 |
+| SCONJ  |      41 |
+| X      |      13 |
+| SYM    |       2 |
+| _      |       1 |
+
+</td><td>
+
+| Type   |   Count |
+|:-------|--------:|
+| NOUN   |     753 |
+| ADP    |     488 |
+| DET    |     439 |
+| PUNCT  |     339 |
+| VERB   |     326 |
+| AUX    |     234 |
+| ADJ    |     224 |
+| ADV    |     131 |
+| PRON   |     106 |
+| CCONJ  |      96 |
+| PROPN  |      90 |
+| PART   |      66 |
+| NUM    |      61 |
+| SCONJ  |      51 |
+| _      |       4 |
+| INTJ   |       2 |
+| X      |       2 |
+
+</td></tr>
+
+
+
+</table>
+
 ## Linear Probing Classifier
+
+### Word Representation
+BERT is a sub-word level model; a single word can be decomposed to multiple tokens 
 
 ### Experiments
 
