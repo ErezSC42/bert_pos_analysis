@@ -2,14 +2,223 @@
 The purpose of this project is to explore the linguistic knowledge embedded in Neural Networks, specifically transformres. in this context, the basic linguistic unit is a word and it's part of speech (POS) label.
 
 ## Data
-we have used the Universal Dependencies English POS dataset.
+The [Universal Dependencies](https://github.com/UniversalDependencies/UD_English-ParTUT) dataset was used. the data is split to 3 groups (train/dev/test) with 1780/156/153 sentences accordingly. As our aim is to study POS classification, all the words in every sentence can be used as data for the model. So, the actual dataset is composed of 43545/2723/3412 words with tagged POS
+
+| word    | label   | text                                                                                                                                                                                                                                                                                                                |   word_offset |
+|:--------|:--------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------:|
+| stand   | VERB    | Ukraine will stand up to the bully – on our own, if necessary.                                                                                                                                                                                                                                                      |             3 |
+| If      | SCONJ   | If they do not, if businesspeople feel marginalised, if entrepreneurs cannot take part, not only in managing but also in receiving these funds, we will have missed an opportunity to attain our objectives more rapidly.                                                                                           |             1 |
+| society | NOUN    | Balzac's vision of a society in which class, money and personal ambition are the major players has been endorsed by critics of both left-wing and right-wing political tendencies.                                                                                                                                  |             6 |
+| very    | ADV     | This report is very good and our Group supports it.                                                                                                                                                                                                                                                                 |             4 |
+| ANY     | DET     | EXCEPT TO THE EXTENT REQUIRED BY APPLICABLE LAW, IN NO EVENT WILL LICENSOR BE LIABLE TO YOU ON ANY LEGAL THEORY FOR ANY SPECIAL, INCIDENTAL, CONSEQUENTIAL, PUNITIVE OR EXEMPLARY DAMAGES ARISING OUT OF THIS LICENSE OR THE USE OF THE WORK, EVEN IF LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. |            20 |  
 
 ### Data Exploration
 Every word in the sentences is tagged
 
+
+
+<table>
+<tr><th> Train </th><th> Dev </th><th> Test </th></tr>
+
+<tr>
+<td>
+
+|   Tokens/Word |   Count |
+|--------------:|--------:|
+|             0 |      55 |
+|             1 |   41015 |
+|             2 |    1388 |
+|             3 |     729 |
+|             4 |     161 |
+|             5 |      24 |
+|             6 |       6 |
+
+</td><td>
+
+|   Tokens/Word |   Count |
+|--------------:|--------:|
+|             0 |      11 |
+|             1 |    2528 |
+|             2 |      82 |
+|             3 |      73 |
+|             4 |      12 |
+|             5 |       2 |
+|             6 |       1 |
+
+</td><td>
+
+|   Tokens/Word |   Count |
+|--------------:|--------:|
+|             0 |      13 |
+|             1 |    3271 |
+|             2 |      73 |
+|             3 |      41 |
+|             4 |       6 |
+|             5 |       2 |
+
+</td></tr>
+
+</table>
+
+
+<table>
+<tr><th> Train </th><th> Dev </th><th> Test </th></tr>
+
+<tr>
+<td>
+
+|   Tokens/Word |   Count |
+|--------------:|--------:|
+|             0 |      55 |
+|             1 |   41015 |
+|             2 |    1388 |
+|             3 |     729 |
+|             4 |     161 |
+|             5 |      24 |
+|             6 |       6 |
+
+</td><td>
+
+|   Tokens/Word |   Count |
+|--------------:|--------:|
+|             0 |      11 |
+|             1 |    2528 |
+|             2 |      82 |
+|             3 |      73 |
+|             4 |      12 |
+|             5 |       2 |
+|             6 |       1 |
+
+</td><td>
+
+|   Tokens/Word |   Count |
+|--------------:|--------:|
+|             0 |      13 |
+|             1 |    3271 |
+|             2 |      73 |
+|             3 |      41 |
+|             4 |       6 |
+|             5 |       2 |
+
+</td></tr>
+
+</table>
+
+
+#### Sentence Length distribution
+the sentence length distribution and statistics is presented below, per each set. The sentences are are relatively short, so the default BERT maximum sequence length configuration is redundant.     
 ![sentence len dist](images/sent_len_dist_hist.png)
 
 
+<table>
+<tr><th> Train </th><th> Dev </th><th> Test </th></tr>
+
+<tr>
+<td>
+
+|       |   word_count |
+|:------|-------------:|
+| count |    1780      |
+| mean  |      21.2225 |
+| std   |      12.6585 |
+| min   |       1      |
+| 25%   |      13      |
+| 50%   |      19      |
+| 75%   |      27      |
+| 95%   |      43      |
+| max   |     173      |
+
+
+</td><td>
+
+|       |   word_count |
+|:------|-------------:|
+| count |    156       |
+| mean  |     14.8526  |
+| std   |      8.60068 |
+| min   |      2       |
+| 25%   |      8       |
+| 50%   |     13       |
+| 75%   |     20       |
+| 95%   |     31.25    |
+| max   |     39       |
+
+</td><td>
+
+|       |   word_count |
+|:------|-------------:|
+| count |     153      |
+| mean  |      19.8824 |
+| std   |       9.7427 |
+| min   |       2      |
+| 25%   |      14      |
+| 50%   |      18      |
+| 75%   |      25      |
+| 95%   |      35      |
+| max   |      64      |
+
+</td></tr>
+</table>
+
+#### Tokens per sentence
+Further diving into the sentence lengths, it can be easily infered that that the tokens count is relatively short as well. BERT's default sequence length is redundant, and a smaller sequence length can be utilized to increase batch size (training and inference speedup) 
+<table>
+<tr><th> Train </th><th> Dev </th><th> Test </th></tr>
+
+<tr>
+<td>
+
+|       |   tokens_per_sentence |
+|:------|----------------------:|
+| count |            43378      |
+| mean  |               36.2704 |
+| std   |               21.6934 |
+| min   |                3      |
+| 25%   |               23      |
+| 50%   |               32      |
+| 75%   |               45      |
+| 90%   |               58      |
+| 95%   |               69      |
+| max   |              217      |
+
+
+</td><td>
+
+|       |   tokens_per_sentence |
+|:------|----------------------:|
+| count |             2709      |
+| mean  |               25.9162 |
+| std   |               11.1605 |
+| min   |                5      |
+| 25%   |               18      |
+| 50%   |               25      |
+| 75%   |               33      |
+| 90%   |               41      |
+| 95%   |               45      |
+| max   |               53      |
+
+</td><td>
+
+|       |   tokens_per_sentence |
+|:------|----------------------:|
+| count |             3406      |
+| mean  |               30.2519 |
+| std   |               15.5721 |
+| min   |                5      |
+| 25%   |               21      |
+| 50%   |               26      |
+| 75%   |               34      |
+| 90%   |               52      |
+| 95%   |               61      |
+| max   |               93      |
+
+
+</td></tr>
+</table>
+
+
+#### Label Distribution
+The following table presents the label distribution per each set. Nouns is the class with most occurrences in the sets, and the top-5 most occurring labels are the same as well. "X" and "_" labels, mostly refer to mid-word dashes, contraptions, non-english words and other outliers which do not have defined syntactic roles. Subsequently, these words were dropped as they are outliers that do not serve our goal.    
 <table>
 <tr><th> Train </th><th> Dev </th><th> Test </th></tr>
 
@@ -82,9 +291,6 @@ Every word in the sentences is tagged
 | X      |       2 |
 
 </td></tr>
-
-
-
 </table>
 
 ## Linear Probing Classifier
