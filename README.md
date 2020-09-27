@@ -16,7 +16,8 @@ The [Universal Dependencies](https://github.com/UniversalDependencies/UD_English
 Every word in the sentences is tagged
 
 
-
+#### Tokens per Word
+BERT is a subword model, and each word can be decomposed to multiple subword 
 <table>
 <tr><th> Train </th><th> Dev </th><th> Test </th></tr>
 
@@ -299,11 +300,25 @@ The following table presents the label distribution per each set. Nouns is the c
 BERT is a sub-word level model; a single word can be decomposed to multiple tokens 
 
 ### Experiments
+Our goal is to study how BERT's intermediate layers embed linguistic knowledge. We extracted the contextual representation vectors from each Transformer unit, resulting in 12 768-d representation vectors for each word. 
+We trained a different linear classifier on each layers' output, predicting POS label. To prove consistency, each classifier was trained with 5 different random seeds. BERT's inner weights were frozen, and no fine-tuning was conducted. The accuracy and micro-average F1 score were chosen to assess performance, as the data is unbalanced.  
+
+
 
 ### Results
+As seen below, BERT's 3rd and 4th hidden transformer units yield the best results, thus they learn linguistic knowledge the best. Constant performance decrease can be observed in all of the layers following the fourth one, the last layer having the worst results. 
 ![linear classifer trainging](images/bert_pos_linear_classifier.png)
 
+
+
+#### BERT base 4th layer
+Classification results are good, as the major errors are in the "INTJ" class. It is expected, as there are only 6 training examples and none in the test set. Other errors occur in classes that are not fully separable in the embedding space (see [this section](#Vanilla BERT embedding distribution)). 
+For example, the "VERB","NOUN" and "ADJ" classes somewhat overlap, resulting "ADJ" mis-classifications. The UMAP visualization sheds light on the fact that these errors are due to the limitations of the linear classifier.
+     
 ![Confustion Matrix](confusion_matrices/Bert_base_frozen_pos_linaer_layers=4_seed=74_conf_mat.jpg)
+#### BERT base 12th (final) layer
+
+BERT was not fine-tuned on POS tagging task, and that reflects strongly in the classification results. as can be seen in the UMAP visualization, the embedding space does not separate POS classes well, limiting the potential of any linear classifier. 
 ![Confustion Matrix](confusion_matrices/Bert_base_frozen_pos_linaer_layers=12_seed=74_conf_mat.jpg)
 
 ## Vanilla BERT embedding distribution
