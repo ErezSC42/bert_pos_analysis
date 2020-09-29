@@ -342,7 +342,7 @@ I used  it to to visualize the intermediate word representations (as mentioned e
 ### Vanilla BERT
 #### Experiment 
 in order to study the vanilla BERT language model linguistic knowledge distribution, it was used to process the train set data without any training.   
-as seen earlier, the intermediate 3rd and 4th layers yieled the best representation vectors for linear POS probe classifier.
+as seen earlier, the intermediate 3rd and 4th layers yield the best representation vectors for linear POS probe classifier.
 
 #### Results
 Below are the unsupervised UMAP visualization results of the intermediate embedding vectors of the words in their context in the train set.
@@ -369,12 +369,34 @@ However, embeddings of the same word tend to cluster together. Since the attenti
 
 
 ![umap visualization](images/BERT%20random%20weights%20Contextual%20Embedding%20Visualization%20of%20the%204th%20Layer.png) ![umap visualization](images/BERT%20random%20weights%20Contextual%20Embedding%20Visualization%20of%20the%2012th%20Layer.png)
-
-
+ 
 ## Single Neuron Linguistic Knowledge 
-
+BERT's contextual embedding is a 768-d vector, representing a single token. Each of these dimensions can be regarded as a feature/neuron. 
+So far, we experimented with each feature vector as a whole, disregarding granularity. In this section, the importance of a single neuron will be explored.
 ### Neuron activation values std
 ![neuron std 12th layer](images/neuron_std_12_layer.png)
 
 ### Neuron activation correlation
 ![neruon correlation 12 layer](images/neruron_correlation_12th_layer.png)
+
+### Neuron Feature Importance
+![neuron feature importance 12](images/neruon_feature_importance_12.png)
+![neuron feature importance 4](images/neuron_feature_importance_4.png)
+
+### Other Approaches
+Another way to study the importance of a single neuron for POS tagging, is to train classifiers based on a single feature.
+Such a task is computationally inefficient, as there are potentially 12*768=9216 classifiers to test. 
+A different approach would be to start with a full classifier (768 neurons), and to remove neurons until the classification performance drops significantly. 
+we suggest and efficient way to implement such an experiment, by using a binary search to isolate neurons affecting classificatin metrics:
+1. N=768 neurons
+2. while N > threshold:
+    
+    2.1. divide N neurons to two groups; A, B with N/2 neurons each. neurons can be divided randomly or by some statistic (std, variance, correlation,etc...)
+    
+    2.2. train linear classifier on A; clf(A)
+    
+    2.3. train linear classifier on B; clf(B)
+    
+    2.4  compare classification metric: if metric(clf(A)) << metric(clf(B)): N = B; else N = A 
+  
+ In this manner, merely log(768) linear classifiers are needed per BERT layer.
