@@ -321,7 +321,7 @@ As seen below, BERT's 3rd and 4th hidden transformer units yield the best result
 
 
 #### BERT base 4th layer
-Classification results are good, as the major errors are in the "INTJ" class. It is expected, as there are only 6 training examples and none in the test set. Other errors occur in classes that are not fully separable in the embedding space (see [this section](#Vanilla BERT embedding distribution)). 
+Classification results are good, as the major errors are in the "INTJ" class. It is expected, as there are only 6 training examples and none in the test set. Other errors occur in classes that are not fully separable in the embedding space. (see [this section](##Vanilla BERT embedding distribution)). 
 For example, the "VERB","NOUN" and "ADJ" classes somewhat overlap, resulting "ADJ" mis-classifications. The UMAP visualization sheds light on the fact that these errors are due to the limitations of the linear classifier.
      
 ![Confustion Matrix](confusion_matrices/Bert_base_frozen_pos_linaer_layers=4_seed=74_conf_mat.jpg)
