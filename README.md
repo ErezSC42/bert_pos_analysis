@@ -2,6 +2,12 @@
 The purpose of this project is to explore the linguistic knowledge embedded in Neural Networks, specifically transformres. in this context, the basic linguistic unit is a word and it's part of speech (POS) label.
 For convenience the [pretrained transformer network by Devalin et al.](https://arxiv.org/abs/1810.04805) will be referred to as "Vanilla" BERT.  
 
+## Installtaion
+The code and environment used for the experiment can be replicated by cloning this repository and running
+```bash
+./build_env.sh
+```
+The script will create directories, download data and setup virtual environment.
 ## Data
 The [Universal Dependencies](https://github.com/UniversalDependencies/UD_English-ParTUT) dataset was used. the data is split to 3 groups (train/dev/test) with 1780/156/153 sentences accordingly. As our aim is to study POS classification, all the words in every sentence can be used as data for the model. So, the actual dataset is composed of 43545/2723/3412 words with tagged POS
 
@@ -18,7 +24,7 @@ Every word in the sentences is tagged
 
 
 #### Tokens per Word
-BERT is a subword model, and each word can be decomposed to multiple subword 
+BERT is a subword model, and each word can be decomposed to multiple sub-word 
 <table>
 <tr><th> Train </th><th> Dev </th><th> Test </th></tr>
 
@@ -377,7 +383,7 @@ So far, we experimented with each feature vector as a whole, disregarding granul
 ![neuron std 12th layer](images/neuron_std_12_layer.png)
 
 ### Neuron activation correlation
-
+Feature correlation is a common practice in detecting redundancy. the following 768x768 matrix displays neuron feature correlation of BERT's final layer. Adjacent features have some correlation between them, but a strong correlation between features was not found. Correlation quantifies linear relation between features, Similar results were found for other BERT layers. 
 ![neruon correlation 12 layer](images/neruron_correlation_12th_layer.png)
 
 ### Neuron Feature Importance
