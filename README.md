@@ -1,11 +1,14 @@
 # Linguistic Information in Deep Language Models
 The purpose of this project is to explore the linguistic knowledge embedded in Neural Networks, specifically transformers. in this context, the basic linguistic unit is a word and it's part of speech (POS) label.
 For convenience the [pretrained transformer network by Devalin et al.](https://arxiv.org/abs/1810.04805) will be referred to as "Vanilla" BERT.  
+
+## Introduction
 Language models often process text as a sequence of tokens, representing the sentence. 
 tokens are the smallest units the model can interact with, and might have implications on the model's expressiveness. 
 "word level" tokens are one-hot encoding of vectors, corresponding to a specific word in a vocabulary. It is easier to represent more complex concepts using word level tokens, but the embedding vector dimension is usually very high (the size of the vocabulary), with affects the size of the language model furthermore, the model will struggle with out of vocabulary ("OOV") words, which are quite common in text written by human (slang, typos, etc). 
 "character level" models encode each character as a single input vector, efficiently representing all possible input words at a small dimension vector. however, sequences of character level tokens are significantly longer then word-level token sequences, making it harder for the model to process deeper concepts (e.g. vanishing gradients).
 BERT is a sub-word level language model, a compromise between word-level and character-level model. A sub-word level model token vector can represent a whole word, or a part of word that contains certain semantic meaning. for example, sub-word models can tokenize the word "questionable" to the following token sequence; "question", "##able". each of the sub-word has a semantic/grammatical meaning, and their combination represents the original word. BERT's sub-word tokenizer is trained on the training corpus, using Byte-Pair encoding algorithm to extract the most frequent character sequences, and use them as tokens.
+
 ## Installation
 The code and environment used for the experiment can be replicated by cloning this repository and running
 ```bash
@@ -310,12 +313,14 @@ BERT is a sub-word level model; a single word can be decomposed to multiple toke
 
 ### Experiments
 Our goal is to study how BERT's intermediate layers embed linguistic knowledge. We extracted the contextual representation vectors from each Transformer unit, resulting in 12 768-d representation vectors for each word. 
-We trained a different linear classifier on each layers' output, predicting POS label. To prove consistency, each classifier was trained with 5 different random seeds. BERT's inner weights were frozen, and no fine-tuning was conducted. The accuracy and micro-average F1 score were chosen to assess performance, as the data is unbalanced.  
+We trained a different linear classifier on each layers' output, predicting POS label. To prove consistency, each classifier was trained with 5 different random seeds. Each classifier was trained for 2 epochs. 
+BERT's inner weights were frozen, and no fine-tuning was conducted. 
+The accuracy and micro-average F1 score were chosen to assess performance, as the data is unbalanced.  
 
 
 
 ### Results
-As seen below, BERT's 3rd and 4th hidden transformer units yield the best results, thus they learn linguistic knowledge the best. Constant performance decrease can be observed in all of the layers following the fourth one, the last layer having the worst results. 
+As seen below, BERT's 3rd and 4th hidden transformer units yield the best accuracy, thus they learn linguistic knowledge the best. Constant performance decrease can be observed in all of the layers following the fourth one, the last layer having the worst results. 
 ![linear classifer trainging](images/bert_pos_linear_classifier.png)
 
 
