@@ -27,15 +27,6 @@ class BertEmbeddingExtractor():
         self.bert_base_model = bert_base_model
         # bert
         self.bert_layer = bert_layer
-        self.bert_config = transformers.BertConfig(num_hidden_layers=bert_layer)
-        self.bert_tokenizer = transformers.BertTokenizer.from_pretrained(
-            pretrained_model_name_or_path=self.bert_base_model
-        )
-        self.bert_model = transformers.BertModel.from_pretrained(
-            config=self.bert_config,
-            pretrained_model_name_or_path=bert_base_model
-        )
-
 
     def extract_embedding(self, dataloader : DataLoader, agg_func: str) -> pd.DataFrame:
         '''
@@ -92,6 +83,42 @@ class BertEmbeddingExtractor():
             pos_to_label_dict = json.load(fp)
             inv_map = {v: k for k, v in pos_to_label_dict.items()}
             embedding_df["label"] = embedding_df["label_idx"].map(inv_map)
-
         return embedding_df
+
+
+class BertEmbeddingExtractorVanilla(BertEmbeddingExtractor):
+    def __init__(
+            self,
+            bert_layer: int,
+            bert_base_model : str = "bert-base-uncased"):
+        super(BertEmbeddingExtractorVanilla, self).__init__(
+            bert_layer=bert_layer,
+            bert_base_model=bert_base_model
+        )
+        self.bert_config = transformers.BertConfig(num_hidden_layers=bert_layer)
+        self.bert_tokenizer = transformers.BertTokenizer.from_pretrained(
+            pretrained_model_name_or_path=self.bert_base_model
+        )
+        self.bert_model = transformers.BertModel.from_pretrained(
+            config=self.bert_config,
+            pretrained_model_name_or_path=bert_base_model
+        )
+
+
+class BertEmbeddingExtractorRandom(BertEmbeddingExtractor):
+    def __init__(
+            self,
+            bert_layer: int,
+            bert_base_model : str = "bert-base-uncased"):
+        super(BertEmbeddingExtractorRandom, self).__init__(
+            bert_layer=bert_layer,
+            bert_base_model=bert_base_model
+        )
+        self.bert_config = transformers.BertConfig(num_hidden_layers=bert_layer)
+        self.bert_tokenizer = transformers.BertTokenizer.from_pretrained(
+            pretrained_model_name_or_path=self.bert_base_model
+        )
+        self.bert_model = transformers.BertModel(
+            config=self.bert_config,
+        )
 

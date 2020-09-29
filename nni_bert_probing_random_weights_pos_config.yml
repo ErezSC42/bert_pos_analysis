@@ -1,5 +1,5 @@
 authorName: erezsc
-experimentName: Bert POS probing classifier - Pretrained weights
+experimentName: Bert POS probing classifier - Random Weights transformers
 trialConcurrency: 2
 maxExecDuration: 96h
 maxTrialNum: 500
@@ -16,5 +16,5 @@ tuner:
     #choice: maximize, minimize
     optimize_mode: maximize
 trial:
-  command: python3 train.py --epochs 2 --class-count 16 --freeze-bert --use-nni --batch-size 64
+  command: python3 train.py --epochs 2 --class-count 16 --freeze-bert --use-nni --batch-size 64 --random-weights
   codeDir: .

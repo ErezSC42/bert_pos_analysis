@@ -44,6 +44,7 @@ def main(args):
     num_hidden_layers = args.hidden_layers_count
     max_sequence_len = args.max_sequence_len
     freeze_bert = args.freeze_bert
+    random_weights = args.random_weights
 
     df_train = df_train.head(train_len)
     df_dev = df_dev.head(test_len)
@@ -54,8 +55,12 @@ def main(args):
 
     model_name = "test_model"
 
-    save_path = os.path.join("confusion_matrices",
-                             f"Bert_base_frozen_pos_linaer_layers={num_hidden_layers}_seed={seed}_conf_mat.jpg")
+    if random_weights:
+        save_path = os.path.join("confusion_matrices",
+                                 f"Bert_random_frozen_pos_linaer_layers={num_hidden_layers}_seed={seed}_conf_mat.jpg")
+    else:
+        save_path = os.path.join("confusion_matrices",
+                                 f"Bert_base_frozen_pos_linaer_layers={num_hidden_layers}_seed={seed}_conf_mat.jpg")
     bert_config = transformers.BertConfig(num_hidden_layers=num_hidden_layers)
     model = BertProbeClassifer(
         device=device,
@@ -65,7 +70,8 @@ def main(args):
         bert_pretrained_model="bert-base-uncased",
         freeze_bert=freeze_bert,
         class_count=classes_count,
-        bert_config=bert_config
+        bert_config=bert_config,
+        random_weights=random_weights
     )
     criterion = nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters(), weight_decay=args.weight_decay, lr=args.learning_rate)

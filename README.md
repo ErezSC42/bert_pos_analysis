@@ -1,5 +1,6 @@
 # Linguistic Information in Deep Language Models
 The purpose of this project is to explore the linguistic knowledge embedded in Neural Networks, specifically transformres. in this context, the basic linguistic unit is a word and it's part of speech (POS) label.
+For convenience the [pretrained transformer network by Devalin et al.](https://arxiv.org/abs/1810.04805) will be referred to as "Vanilla" BERT.  
 
 ## Data
 The [Universal Dependencies](https://github.com/UniversalDependencies/UD_English-ParTUT) dataset was used. the data is split to 3 groups (train/dev/test) with 1780/156/153 sentences accordingly. As our aim is to study POS classification, all the words in every sentence can be used as data for the model. So, the actual dataset is composed of 43545/2723/3412 words with tagged POS
@@ -294,7 +295,7 @@ The following table presents the label distribution per each set. Nouns is the c
 </td></tr>
 </table>
 
-## Linear Probing Classifier
+## Vanilla BERT Linear Probing Classifier
 
 ### Word Representation
 BERT is a sub-word level model; a single word can be decomposed to multiple tokens 
@@ -321,14 +322,29 @@ For example, the "VERB","NOUN" and "ADJ" classes somewhat overlap, resulting "AD
 BERT was not fine-tuned on POS tagging task, and that reflects strongly in the classification results. as can be seen in the UMAP visualization, the embedding space does not separate POS classes well, limiting the potential of any linear classifier. 
 ![Confustion Matrix](confusion_matrices/Bert_base_frozen_pos_linaer_layers=12_seed=74_conf_mat.jpg)
 
-## Vanilla BERT embedding distribution
+
+## Random Weights BERT Linear Probing Classifier
+A good baseline for probing classifier is a BERT network without pretraining
+### Experiments 
+the same experiment confguration was conducted as before
+### Results
+As expected, the classifiers do not perform as good as the pretrained models. Earlier layers produce embeddings that perform slightly better, possibly due to less randomized non-linearities. 
+![random linear classifier](images/random_pos_linear_classifier.png) 
+
+
+## BERT Latent Space
 [Uniform Manifold Approximation and Projection for Dimension Reduction](https://arxiv.org/abs/1802.03426) (UMAP) is a manifold based dimension reduction algorithm, useful for visualization of high dimensional data.
 I used  it to to visualize the intermediate word representations (as mentioned earlier) in the vanilla BERT model. UMAP has both a supervised and an unsupervised implementations (the labels can be used to improve the dimension reduction process). In the following example, the unsupervised implementation was used as our goal is to observe the POS distribution in the embedding space. dimension reduction from 768-d space to 2-d space is acute, and a lot of data is being lost in the process. It allows us to glimpse to the data distribution in higher dimension, but does not accurately represent it.  
-### Experiment 
+
+
+
+
+### Vanilla BERT
+#### Experiment 
 in order to study the vanilla BERT language model linguistic knowledge distribution, it was used to process the train set data without any training.   
 as seen earlier, the intermediate 3rd and 4th layers yieled the best representation vectors for linear POS probe classifier.
 
-### Results
+#### Results
 Below are the unsupervised UMAP visualization results of the intermediate embedding vectors of the words in their context in the train set.
 the embedding vectors yielded by the final layer are mostly disorganized, and do not form distinguishable POS clusters. It is not surprising, because of the following reasons:
 - deeper layers in large neural networks tend to learn abstract and high level concepts
@@ -341,4 +357,24 @@ There are 2 POS groups that are indeed distinguishable; punctuation and determin
 
 ![umap visualization](images/BERT%20Contextual%20Embedding%20Visualization%20of%20the%204th%20Layer.png) ![umap visualization](images/BERT%20Contextual%20Embedding%20Visualization%20of%20the%2012th%20Layer.png)
 
-### 4th layer
+
+### Randomized BERT weights
+#### Experiment 
+The same processes was applied as with the vanilla BERT, but this time the transformer weights were randomized. As mentioned earlier, this configuration serves as a good baseline for comparison.
+
+#### Results
+As expected, no significant clusters can be detected, as the model's weights are randomized. there are not meaningful differences between the fourth and final layer latent spaces. 
+However, embeddings of the same word tend to cluster together. Since the attention heads are not trained on any specific tasks,    
+ 
+
+
+![umap visualization](images/BERT%20random%20weights%20Contextual%20Embedding%20Visualization%20of%20the%204th%20Layer.png) ![umap visualization](images/BERT%20random%20weights%20Contextual%20Embedding%20Visualization%20of%20the%2012th%20Layer.png)
+
+
+## Single Neuron Linguistic Knowledge 
+
+### Neuron activation values std
+![neuron std 12th layer](images/neuron_std_12_layer.png)
+
+### Neuron activation correlation
+![neruon correlation 12 layer](images/neruron_correlation_12th_layer.png)

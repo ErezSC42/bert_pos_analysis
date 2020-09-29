@@ -28,7 +28,8 @@ class BertWrapperModel(nn.Module):
             model_name : str,
             bert_pretrained_model: str,
             freeze_bert: bool,
-            bert_config: transformers.BertConfig = None):
+            bert_config: transformers.BertConfig = None,
+            random_weights: bool=False):
         nn.Module.__init__(self)
         self.device = device
         self.max_sequence_len = max_sequence_len
@@ -36,10 +37,13 @@ class BertWrapperModel(nn.Module):
         self.model_name = model_name
         self.freeze_bert = freeze_bert
         self.bert_config = bert_config
+        self.random_weights = random_weights
 
         self.tokenizer = transformers.BertTokenizer.from_pretrained(bert_pretrained_model)
-        self.bert = transformers.BertModel.from_pretrained(bert_pretrained_model, config=bert_config)
-
+        if random_weights:
+            self.bert = transformers.BertModel(config=bert_config)
+        else:
+            self.bert = transformers.BertModel.from_pretrained(bert_pretrained_model, config=bert_config)
         if self.freeze_bert:
             for param in self.bert.parameters():
                 param.requires_grad = False
@@ -102,7 +106,7 @@ class BertWrapperModel(nn.Module):
                 test_acc, precision, recall, test_f1 = calc_classification_metrics(y_true=y_real, y_pred=y_pred)
                 if verbose:
                     print(
-                        f'\tEp #{epoch} | Val. A456'
+                        f'\tEp #{epoch} | Dev. '
                         f'cc: {acc * 100:.2f}% | Precision: {precision * 100:.2f}% | Recall: {recall * 100:.2f}% | F1: {f1 * 100:.2f}%')
                 results["test_acc"].append(acc)
                 results["test_loss"].append(loss)
@@ -167,7 +171,8 @@ class BertProbeClassifer(BertWrapperModel):
             bert_pretrained_model: str,
             freeze_bert: bool,
             class_count: int,
-            bert_config: transformers.BertConfig = None):
+            bert_config: transformers.BertConfig = None,
+            random_weights: bool = False):
         super(BertProbeClassifer, self).__init__(
             device=device,
             max_sequence_len=max_sequence_len,
@@ -176,6 +181,7 @@ class BertProbeClassifer(BertWrapperModel):
             bert_pretrained_model=bert_pretrained_model,
             freeze_bert=freeze_bert,
             bert_config=bert_config,
+            random_weights=random_weights
         )
         self.class_count = class_count
         self.linear = nn.Linear(in_features=768, out_features=class_count)
