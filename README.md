@@ -1,9 +1,12 @@
 # Linguistic Information in Deep Language Models
-The purpose of this project is to explore the linguistic knowledge embedded in Neural Networks, specifically transformres. in this context, the basic linguistic unit is a word and it's part of speech (POS) label.
+The purpose of this project is to explore the linguistic knowledge embedded in Neural Networks, specifically transformers. in this context, the basic linguistic unit is a word and it's part of speech (POS) label.
 For convenience the [pretrained transformer network by Devalin et al.](https://arxiv.org/abs/1810.04805) will be referred to as "Vanilla" BERT.  
-language models often process text as a sequence of tokens, representing the sentence. tokens are the smallest units the model can interact with, and might have implications on the model's expressiveness. "word level" tokens are one-hot encoding of vectors, corresponding to a specific word in a vocabulary. It is easier to represent more complex concepts using word level tokens, but the embedding vector dimension is usually very high (the size of the vocabulary), with affects the size of the language model furthermore, the model will struggle with out of vocabulary ("OOV") words, which are quite common in text written by human (slang, typos, etc). "character level" models encode each character as a single input vector, efficiently representing all possible input words at a small dimension vector. however, sequences of character level tokens are significantly longer then word-level token sequences, making it harder for the model to process deeper concepts (e.g. vanishing gradients).
+Language models often process text as a sequence of tokens, representing the sentence. 
+tokens are the smallest units the model can interact with, and might have implications on the model's expressiveness. 
+"word level" tokens are one-hot encoding of vectors, corresponding to a specific word in a vocabulary. It is easier to represent more complex concepts using word level tokens, but the embedding vector dimension is usually very high (the size of the vocabulary), with affects the size of the language model furthermore, the model will struggle with out of vocabulary ("OOV") words, which are quite common in text written by human (slang, typos, etc). 
+"character level" models encode each character as a single input vector, efficiently representing all possible input words at a small dimension vector. however, sequences of character level tokens are significantly longer then word-level token sequences, making it harder for the model to process deeper concepts (e.g. vanishing gradients).
 BERT is a sub-word level language model, a compromise between word-level and character-level model. A sub-word level model token vector can represent a whole word, or a part of word that contains certain semantic meaning. for example, sub-word models can tokenize the word "questionable" to the following token sequence; "question", "##able". each of the sub-word has a semantic/grammatical meaning, and their combination represents the original word. BERT's sub-word tokenizer is trained on the training corpus, using Byte-Pair encoding algorithm to extract the most frequent character sequences, and use them as tokens.
-## Installtaion
+## Installation
 The code and environment used for the experiment can be replicated by cloning this repository and running
 ```bash
 ./build_env.sh
@@ -38,7 +41,6 @@ BERT is a subword model, and each word can be decomposed to multiple sub-word co
 
 |   Tokens/Word |   Count |
 |--------------:|--------:|
-|             0 |      55 |
 |             1 |   41015 |
 |             2 |    1388 |
 |             3 |     729 |
@@ -50,7 +52,6 @@ BERT is a subword model, and each word can be decomposed to multiple sub-word co
 
 |   Tokens/Word |   Count |
 |--------------:|--------:|
-|             0 |      11 |
 |             1 |    2528 |
 |             2 |      82 |
 |             3 |      73 |
@@ -62,7 +63,6 @@ BERT is a subword model, and each word can be decomposed to multiple sub-word co
 
 |   Tokens/Word |   Count |
 |--------------:|--------:|
-|             0 |      13 |
 |             1 |    3271 |
 |             2 |      73 |
 |             3 |      41 |
@@ -82,7 +82,6 @@ BERT is a subword model, and each word can be decomposed to multiple sub-word co
 
 |   Tokens/Word |   Count |
 |--------------:|--------:|
-|             0 |      55 |
 |             1 |   41015 |
 |             2 |    1388 |
 |             3 |     729 |
@@ -94,7 +93,6 @@ BERT is a subword model, and each word can be decomposed to multiple sub-word co
 
 |   Tokens/Word |   Count |
 |--------------:|--------:|
-|             0 |      11 |
 |             1 |    2528 |
 |             2 |      82 |
 |             3 |      73 |
@@ -106,7 +104,6 @@ BERT is a subword model, and each word can be decomposed to multiple sub-word co
 
 |   Tokens/Word |   Count |
 |--------------:|--------:|
-|             0 |      13 |
 |             1 |    3271 |
 |             2 |      73 |
 |             3 |      41 |
@@ -346,8 +343,6 @@ As expected, the classifiers do not perform as good as the pretrained models. Ea
 ## BERT Latent Space
 [Uniform Manifold Approximation and Projection for Dimension Reduction](https://arxiv.org/abs/1802.03426) (UMAP) is a manifold based dimension reduction algorithm, useful for visualization of high dimensional data.
 I used  it to to visualize the intermediate word representations (as mentioned earlier) in the vanilla BERT model. UMAP has both a supervised and an unsupervised implementations (the labels can be used to improve the dimension reduction process). In the following example, the unsupervised implementation was used as our goal is to observe the POS distribution in the embedding space. dimension reduction from 768-d space to 2-d space is acute, and a lot of data is being lost in the process. It allows us to glimpse to the data distribution in higher dimension, but does not accurately represent it.  
-
-
 
 
 ### Vanilla BERT
