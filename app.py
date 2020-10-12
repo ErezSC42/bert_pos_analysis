@@ -1,27 +1,37 @@
 import os
-import umap
+import random
+import warnings
+import pickle
 import altair as alt
 import streamlit as st
-import pandas as pd
+import streamlit_theme as stt
 
+stt.set_theme({
+    'primary':'#00cc99',
+})
 
-@st.cache
-def load_data(chosen_bert_layer):
-    bert_results_path = os.path.join("bert_embeddings", f"bert_base_embedding_layer_{chosen_bert_layer}")
-    query_df = pd.read_csv(bert_results_path)
-    query_df.dropna(inplace=True)
-    embedding_columns_list = [str(i) for i in list(range(768))]
-    contextual_embedding_array = query_df[embedding_columns_list].to_numpy()
-    query_df.drop(columns=embedding_columns_list, inplace=True)
-    reducer = umap.UMAP()
-    lower_dim_data = reducer.fit_transform(
-        contextual_embedding_array,
-    )
-    del contextual_embedding_array
-    return query_df, lower_dim_data
+SAMPLES_TO_DISPALY = 20
+X_LIM_MIN = -20
+X_LIM_MAX = 20
+Y_LIM_MIN = -20
+Y_LIM_MAX = 22
+seed = 42
+warnings.filterwarnings(action="ignore")
 
+LABELS = ["ADJ", "ADP", "ADV", "AUX", "CCONJ", "DET", "INTJ", "NOUN", "NUM", "PART", "PRON", "PROPN", "PUNCT", "SCONJ", "SYM", "VERB"]
 
-st.title("BERT")
+#@st.cache
+def load_data():
+    temp = {}
+    for i in range(1,13):
+        bert_results_path = os.path.join("umap_pickles", f"bert_base_embedding_layer_{i}")
+        with open(bert_results_path, "rb") as fp:
+            temp[i] = pickle.load(fp)
+    return temp
+
+embeddings_dataframes = load_data()
+
+st.title("BERT Embedding Explorer")
 st.write("Choose BERT layer")
 
 chosen_bert_layer = st.slider(
@@ -32,34 +42,54 @@ chosen_bert_layer = st.slider(
     value=4
 )
 
-query_df, lower_dim_data = load_data(chosen_bert_layer)
+query_df, lower_dim_data = embeddings_dataframes[chosen_bert_layer]
 
-query_text = st.text_input(
-    label="Select Word",
-    max_chars=15,
-    value="",
+selected_input_type = st.radio(
+    "Select Input Mode",
+    ("row", "word")
 )
 
+input_display = "Word" if selected_input_type == "word" else "Row Index"
+boolean_text_display = False if selected_input_type == "word" else True
 
+if selected_input_type == "row":
+    query_text = st.number_input(
+        label=f"Select {input_display}",
+        value=seed
+    )
+else:
+    query_text = st.text_input(
+        label=f"Select {input_display}",
+        max_chars=15,
+        value="",
+    )
+
+
+viz_df = query_df
 if query_text == "":
-    viz_df = query_df
     matching_idx = len(query_df) * [True]
 else:
-    matching_idx = query_df["word"] == query_text
+    if selected_input_type == "word":
+        matching_idx = query_df["word"] == query_text
+    else:  #row
+        row_text = query_df["text"].loc[query_text]
+        matching_idx = query_df["text"] == row_text
     viz_df = query_df[matching_idx]
-st.write(f"Results: {len(viz_df)}")
-
+    if boolean_text_display:
+        text_display = st.write(f"{row_text}")
+    st.write(f"Results: {len(viz_df)}")
 viz_df["X"] = lower_dim_data[matching_idx,0]
 viz_df["Y"] = lower_dim_data[matching_idx,1]
 viz_df.dropna(inplace=True)
 
 
-chart = alt.Chart(viz_df).mark_point(size=10).encode(
-    x="X",
-    y="Y",
+chart = alt.Chart(viz_df).mark_point(size=50, filled=True).encode(
+    alt.X("X", scale=alt.Scale(domain=(X_LIM_MIN, X_LIM_MAX))),
+    alt.Y("Y", scale=alt.Scale(domain=(Y_LIM_MIN, Y_LIM_MAX))),
     color="label",
-    tooltip=['word', 'label', 'text'],
+    tooltip=['word', 'label', 'text']
 ).interactive()
 
+
 st.altair_chart(chart, use_container_width=True)
-st.write(viz_df.head(10))
+st.write(viz_df.head(SAMPLES_TO_DISPALY))
