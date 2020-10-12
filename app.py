@@ -22,14 +22,18 @@ LABELS = ["ADJ", "ADP", "ADV", "AUX", "CCONJ", "DET", "INTJ", "NOUN", "NUM", "PA
 
 #@st.cache
 def load_data():
-    temp = {}
+    temp_bert = {}
+    temp_roberta = {}
     for i in range(1,13):
-        bert_results_path = os.path.join("umap_pickles", f"bert_base_embedding_layer_{i}")
+        bert_results_path = os.path.join("umap_pickles", f"bert_base_embedding_layer_{i}.pkl")
+        roberta_results_path = os.path.join("umap_pickles", f"roberta_base_embedding_layer_{i}.pkl")
         with open(bert_results_path, "rb") as fp:
-            temp[i] = pickle.load(fp)
-    return temp
+            temp_bert[i] = pickle.load(fp)
+        with open(roberta_results_path, "rb") as fp:
+            temp_roberta[i] = pickle.load(fp)
+    return temp_bert, temp_roberta
 
-embeddings_dataframes = load_data()
+bert_embeddings_dataframes, roberta_embeddings_dataframes = load_data()
 
 st.title("BERT Embedding Explorer")
 st.write("Choose BERT layer")
@@ -42,7 +46,15 @@ chosen_bert_layer = st.slider(
     value=4
 )
 
-query_df, lower_dim_data = embeddings_dataframes[chosen_bert_layer]
+chosen_model = st.radio(
+    "Choose Model:",
+    ("bert-base", "roberta-base")
+)
+
+if chosen_model == "bert-base":
+    query_df, lower_dim_data = bert_embeddings_dataframes[chosen_bert_layer]
+elif chosen_model == "roberta-base":
+    query_df, lower_dim_data = roberta_embeddings_dataframes[chosen_bert_layer]
 
 selected_input_type = st.radio(
     "Select Input Mode",

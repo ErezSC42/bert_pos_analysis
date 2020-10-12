@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import torch.nn as nn
 import matplotlib.pyplot as plt
-from transformers import BertTokenizer
+from transformers import AutoTokenizer, BertTokenizer, RobertaTokenizer
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import recall_score, accuracy_score, precision_score, f1_score, confusion_matrix
 
@@ -61,12 +61,14 @@ def tokenize_word(sentence_ids, target_word, bert_tokenizer):
         for tok_idx in word_ids_indexes_in_text:
             word_mask[tok_idx] = 1
         return word_mask
-    except:
+    except Exception as ex:
+        print(ex)
         return word_mask
 
-def preprocess_text(x: str, tokenizer: BertTokenizer, max_sequence_len: int):
+def preprocess_text(x: str, tokenizer: AutoTokenizer, max_sequence_len: int):
     cur_x = x
-    cur_x = "[CLS] " + cur_x
+    if isinstance(tokenizer, BertTokenizer):
+        cur_x = "[CLS] " + cur_x
     cur_x = cur_x.replace("\n", "")
     cur_x = cur_x.replace(" cannot ", " can not ")
     cur_x = tokenizer.tokenize(cur_x)
@@ -85,7 +87,7 @@ def text_to_dataloader(
         sentences_df: pd.DataFrame,
         device: torch.device,
         inference_batch_size: int,
-        bert_tokenizer: BertTokenizer,
+        bert_tokenizer: AutoTokenizer,
         max_sequence_len: int) -> DataLoader:
     '''
     mutates dataframe!

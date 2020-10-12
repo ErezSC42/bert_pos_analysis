@@ -95,11 +95,14 @@ class BertEmbeddingExtractorVanilla(BertEmbeddingExtractor):
             bert_layer=bert_layer,
             bert_base_model=bert_base_model
         )
-        self.bert_config = transformers.BertConfig(num_hidden_layers=bert_layer)
-        self.bert_tokenizer = transformers.BertTokenizer.from_pretrained(
+        self.bert_config = transformers.AutoConfig.from_pretrained(
+            bert_base_model,
+            num_hidden_layers=bert_layer
+        )
+        self.bert_tokenizer = transformers.AutoTokenizer.from_pretrained(
             pretrained_model_name_or_path=self.bert_base_model
         )
-        self.bert_model = transformers.BertModel.from_pretrained(
+        self.bert_model = transformers.AutoModel.from_pretrained(
             config=self.bert_config,
             pretrained_model_name_or_path=bert_base_model
         )
