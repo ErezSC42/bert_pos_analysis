@@ -37,8 +37,6 @@ def load_data():
 bert_embeddings_dataframes, roberta_embeddings_dataframes = load_data()
 #print(type(bert_embeddings_dataframes[1][0]))
 
-# st.write(bert_embeddings_dataframes[1][0])
-# st.write(roberta_embeddings_dataframes[1][0])
 
 
 st.title("Transformer Embedding Explorer")
@@ -59,6 +57,7 @@ chosen_bert_layer = st.sidebar.slider(
 
 query_df_bert, lower_dim_data_bert = bert_embeddings_dataframes[chosen_bert_layer]
 query_df_roberta, lower_dim_data_roberta = roberta_embeddings_dataframes[chosen_bert_layer]
+query_df_roberta["word"] = query_df_roberta["word"].str.replace(" ","")
 
 selected_input_type = st.sidebar.radio(
     "Select Input Mode",
@@ -87,8 +86,15 @@ elif selected_input_type == "word":
     )
     if query_text != "":
         matching_idx_bert = query_df_bert["word"] == query_text
+        #matching_idx_roberta = query_df_roberta["word"].apply(lambda x: query_text == x[1:] and print(x) == None)
         matching_idx_roberta = query_df_roberta["word"] == query_text
         st.write(query_text)
+
+        print(f"bert found: {sum(matching_idx_bert == True)}")
+        print(f"roberta found: {sum(matching_idx_roberta == True)}")
+
+        print(query_df_roberta["word"])
+
         viz_df_bert = query_df_bert[matching_idx_bert]
         viz_df_roberta = query_df_roberta[matching_idx_roberta]
     else:
@@ -127,7 +133,6 @@ st.write(f"Results: {len(matching_idx_roberta)}")
 st.write(f"BERT Results: {len(viz_df_bert)}")
 
 if len(viz_df_bert) > 0:
-    print(viz_df_bert)
     chart_bert = alt.Chart(viz_df_bert).mark_point(size=50, filled=True).encode(
         alt.X("X", scale=alt.Scale(domain=(X_LIM_MIN, X_LIM_MAX))),
         alt.Y("Y", scale=alt.Scale(domain=(Y_LIM_MIN, Y_LIM_MAX))),
