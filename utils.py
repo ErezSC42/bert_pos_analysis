@@ -10,18 +10,18 @@ from transformers import AutoTokenizer, BertTokenizer, RobertaTokenizer
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import recall_score, accuracy_score, precision_score, f1_score, confusion_matrix
 
+HEADER_CONST = "# sent_id = "
+TEXT_CONST = "# text = "
+STOP_CONST = "\n"
+WORD_OFFSET = 1
+LABEL_OFFSET = 3
+NUM_OFFSET = 0
+
 
 def txt_to_dataframe(data_path):
     '''
     read UD text file and convert to df format
     '''
-
-    HEADER_CONST = "# sent_id = "
-    TEXT_CONST = "# text = "
-    STOP_CONST = "\n"
-    WORD_OFFSET = 1
-    LABEL_OFFSET = 3
-
     with open(data_path, "r") as fp:
         df = pd.DataFrame(
             columns={
@@ -34,10 +34,12 @@ def txt_to_dataframe(data_path):
             if TEXT_CONST in line:
                 words_list = []
                 labels_list = []
+                num_list = []
                 text = line.split(TEXT_CONST)[1]
                 # this is a new text, need to parse all the words in it
             elif line is not STOP_CONST and HEADER_CONST not in line:
                 temp_list = line.split("\t")
+                num_list.append(temp_list[NUM_OFFSET])
                 words_list.append(temp_list[WORD_OFFSET])
                 labels_list.append(temp_list[LABEL_OFFSET])
             if line == STOP_CONST:
@@ -46,24 +48,49 @@ def txt_to_dataframe(data_path):
                     {
                         "text": len(words_list) * [text],
                         "word": words_list,
-                        "label": labels_list
+                        "word_offset": num_list,
+                        "label": labels_list,
+                        "word_count" : len(words_list)
                     }
                 )
                 df = pd.concat([df, cur_df])
         return df
 
-
-def tokenize_word(sentence_ids, target_word, bert_tokenizer):
+def tokenize_word(sentence_ids, target_word, bert_tokenizer, word_offset, text, word_count):
     word_mask = len(sentence_ids) * [0]
-    word_ids = bert_tokenizer.convert_tokens_to_ids(bert_tokenizer.tokenize(target_word))
+    if isinstance(bert_tokenizer, RobertaTokenizer):
+        # adding the pesky character of the roberta BPE
+        sentence_tokens = set(bert_tokenizer.convert_ids_to_tokens(sentence_ids))
+        candidate_tokens_1 = bert_tokenizer.tokenize(f'Ġ{target_word}')[2:]
+        candidate_tokens_2 = bert_tokenizer.tokenize(f' {target_word}')
+        candidate_tokens_3 = bert_tokenizer.tokenize(f'{target_word}.')
+        candidate_tokens_4 = bert_tokenizer.tokenize(f'{target_word}".')
+        candidate_tokens_5 = bert_tokenizer.tokenize(f'"{target_word}.')
+        if set(candidate_tokens_1).issubset(sentence_tokens):
+            matching_tokens = candidate_tokens_1
+        elif set(candidate_tokens_3).issubset(sentence_tokens):
+            matching_tokens = candidate_tokens_3
+        elif set(candidate_tokens_4).issubset(sentence_tokens):
+            matching_tokens = candidate_tokens_4
+        elif set(candidate_tokens_5).issubset(sentence_tokens):
+            matching_tokens = candidate_tokens_5
+        elif set(candidate_tokens_2).issubset(sentence_tokens):
+            matching_tokens = candidate_tokens_2
+        else:
+            matching_tokens = bert_tokenizer.tokenize(target_word)
+        word_ids = bert_tokenizer.convert_tokens_to_ids(matching_tokens)
+    else:
+        word_ids = bert_tokenizer.convert_tokens_to_ids(bert_tokenizer.tokenize(target_word))
     try:
         word_ids_indexes_in_text = [sentence_ids.index(word) for word in word_ids]
         for tok_idx in word_ids_indexes_in_text:
             word_mask[tok_idx] = 1
-        return word_mask
     except Exception as ex:
-        print(ex)
-        return word_mask
+        pass
+        #print(ex)
+        #print(f"target word: {target_word} , matching_tokens: {matching_tokens}")
+        #print()
+    return word_mask
 
 def preprocess_text(x: str, tokenizer: AutoTokenizer, max_sequence_len: int):
     cur_x = x
@@ -106,8 +133,12 @@ def text_to_dataloader(
 
     df["label_idx"] = df["label"].map(pos_to_label_dict)
     df["text_ids"] = df["text"].apply(lambda x: preprocess_text(x, bert_tokenizer,max_sequence_len))
+    df["word_count"] = df["word_count"].astype(int)
     df["attn_mask"] = df["text_ids"].apply(lambda x: extract_attn_mask(x, max_sequence_len))
-    df["query_mask"] = df.apply(lambda row: tokenize_word(row.text_ids, row.word, bert_tokenizer), axis=1)
+    df["query_mask"] = df.apply(lambda row: tokenize_word(row.text_ids, row.word, bert_tokenizer, int(row.word_offset), row.text, row.word_count), axis=1)
+
+    # drop failed target word mask extraction
+    df = df[df["query_mask"].apply(lambda x: sum(x) > 0)]
 
     sentences_idx_tensor = torch.LongTensor(np.stack(df["text_ids"].values)).to(device)
     sentences_mask_tensor = torch.LongTensor(np.stack(df["attn_mask"].values)).to(device)

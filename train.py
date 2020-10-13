@@ -11,6 +11,8 @@ from utils import check_accuracy_classification, txt_to_dataframe
 from utils import text_to_dataloader, plot_confusion_matrix, calc_performance
 
 
+#MODEL_NAME = "bert-base-uncased"
+MODEL_NAME = "roberta-base"
 MATRICES_SAVE_PATH = os.path.join("confusion_matrices")
 
 
@@ -35,7 +37,7 @@ def main(args):
     train_len = len(df_train)
     test_len = len(df_dev)
 
-    bert_tokenizer = transformers.BertTokenizer.from_pretrained("bert-base-uncased")
+    bert_tokenizer = transformers.AutoTokenizer.from_pretrained(MODEL_NAME)
 
     # getting arguments
     batch_size = args.batch_size
@@ -57,17 +59,20 @@ def main(args):
 
     if random_weights:
         save_path = os.path.join("confusion_matrices",
-                                 f"Bert_random_frozen_pos_linaer_layers={num_hidden_layers}_seed={seed}_conf_mat.jpg")
+                                 f"{MODEL_NAME}_random_frozen_pos_linaer_layers={num_hidden_layers}_seed={seed}_conf_mat.jpg")
     else:
         save_path = os.path.join("confusion_matrices",
-                                 f"Bert_base_frozen_pos_linaer_layers={num_hidden_layers}_seed={seed}_conf_mat.jpg")
-    bert_config = transformers.BertConfig(num_hidden_layers=num_hidden_layers)
+                                 f"{MODEL_NAME}_frozen_pos_linaer_layers={num_hidden_layers}_seed={seed}_conf_mat.jpg")
+    bert_config = transformers.AutoConfig.from_pretrained(
+        MODEL_NAME,
+        num_hidden_layers=num_hidden_layers
+    )
     model = BertProbeClassifer(
         device=device,
         max_sequence_len=max_sequence_len,
         inference_batch_size=batch_size,
         model_name=model_name,
-        bert_pretrained_model="bert-base-uncased",
+        bert_pretrained_model=MODEL_NAME,
         freeze_bert=freeze_bert,
         class_count=classes_count,
         bert_config=bert_config,

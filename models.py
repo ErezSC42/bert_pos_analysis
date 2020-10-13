@@ -28,7 +28,7 @@ class BertWrapperModel(nn.Module):
             model_name : str,
             bert_pretrained_model: str,
             freeze_bert: bool,
-            bert_config: transformers.BertConfig = None,
+            bert_config: transformers.AutoConfig = None,
             random_weights: bool=False):
         nn.Module.__init__(self)
         self.device = device
@@ -39,14 +39,19 @@ class BertWrapperModel(nn.Module):
         self.bert_config = bert_config
         self.random_weights = random_weights
 
-        self.tokenizer = transformers.BertTokenizer.from_pretrained(bert_pretrained_model)
+        self.tokenizer = transformers.AutoTokenizer.from_pretrained(bert_pretrained_model)
         if random_weights:
-            self.bert = transformers.BertModel(config=bert_config)
+            self.bert = transformers.AutoModel(config=bert_config)
         else:
-            self.bert = transformers.BertModel.from_pretrained(bert_pretrained_model, config=bert_config)
+            self.bert = transformers.AutoModel.from_pretrained(
+                pretrained_model_name_or_path=bert_pretrained_model,
+                config=bert_config
+            )
         if self.freeze_bert:
+            print("Transformer weights frozen.")
             for param in self.bert.parameters():
                 param.requires_grad = False
+
 
     def generate_model_save_name(self, test_acc):
         return f"{self.__class__.__name__}_{self._lang}_{self._task}_{self._model_name}_{test_acc:.3}_{datetime.datetime.today().day}_{datetime.datetime.today().month}.pth".replace("-", "_").replace("/", "_")
@@ -171,7 +176,7 @@ class BertProbeClassifer(BertWrapperModel):
             bert_pretrained_model: str,
             freeze_bert: bool,
             class_count: int,
-            bert_config: transformers.BertConfig = None,
+            bert_config: transformers.AutoConfig = None,
             random_weights: bool = False):
         super(BertProbeClassifer, self).__init__(
             device=device,

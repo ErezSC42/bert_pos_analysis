@@ -33,12 +33,17 @@ def load_data():
             temp_roberta[i] = pickle.load(fp)
     return temp_bert, temp_roberta
 
+
 bert_embeddings_dataframes, roberta_embeddings_dataframes = load_data()
+#print(type(bert_embeddings_dataframes[1][0]))
 
-st.title("BERT Embedding Explorer")
-st.write("Choose BERT layer")
+# st.write(bert_embeddings_dataframes[1][0])
+# st.write(roberta_embeddings_dataframes[1][0])
 
-chosen_bert_layer = st.slider(
+
+st.title("Transformer Embedding Explorer")
+
+chosen_bert_layer = st.sidebar.slider(
     min_value=1,
     max_value=12,
     label="Layer",
@@ -46,62 +51,105 @@ chosen_bert_layer = st.slider(
     value=4
 )
 
-chosen_model = st.radio(
-    "Choose Model:",
-    ("bert-base", "roberta-base")
-)
+# chosen_model = st.sidebar.radio(
+#     "Choose Model:",
+#     ("roberta-base", "bert-base")
+# )
 
-if chosen_model == "bert-base":
-    query_df, lower_dim_data = bert_embeddings_dataframes[chosen_bert_layer]
-elif chosen_model == "roberta-base":
-    query_df, lower_dim_data = roberta_embeddings_dataframes[chosen_bert_layer]
 
-selected_input_type = st.radio(
+query_df_bert, lower_dim_data_bert = bert_embeddings_dataframes[chosen_bert_layer]
+query_df_roberta, lower_dim_data_roberta = roberta_embeddings_dataframes[chosen_bert_layer]
+
+selected_input_type = st.sidebar.radio(
     "Select Input Mode",
-    ("row", "word")
+    ("word", "all", "row")
 )
+
 
 input_display = "Word" if selected_input_type == "word" else "Row Index"
-boolean_text_display = False if selected_input_type == "word" else True
 
 if selected_input_type == "row":
-    query_text = st.number_input(
+    query_text = st.sidebar.number_input(
         label=f"Select {input_display}",
         value=seed
     )
-else:
-    query_text = st.text_input(
+    row_text = query_df_bert["text"].loc[query_text]
+    matching_idx_bert = query_df_bert["text"] == row_text
+    matching_idx_roberta = query_df_roberta["text"] == row_text
+    st.write(f"{row_text}")
+    viz_df_bert = query_df_bert[matching_idx_bert]
+    viz_df_roberta = query_df_roberta[matching_idx_roberta]
+elif selected_input_type == "word":
+    query_text = st.sidebar.text_input(
         label=f"Select {input_display}",
         max_chars=15,
         value="",
     )
+    if query_text != "":
+        matching_idx_bert = query_df_bert["word"] == query_text
+        matching_idx_roberta = query_df_roberta["word"] == query_text
+        st.write(query_text)
+        viz_df_bert = query_df_bert[matching_idx_bert]
+        viz_df_roberta = query_df_roberta[matching_idx_roberta]
+    else:
+        matching_idx_bert = len(query_df_bert) * [False]
+        matching_idx_roberta = len(query_df_roberta) * [False]
+        viz_df_bert = query_df_bert[matching_idx_bert]
+        viz_df_roberta = query_df_roberta[matching_idx_roberta]
+
+else:  # all
+    matching_idx_bert = len(query_df_bert) * [True]
+    matching_idx_roberta = len(query_df_roberta) * [True]
+
+    viz_df_bert = query_df_bert
+    viz_df_roberta = query_df_roberta[matching_idx_roberta]
 
 
-viz_df = query_df
-if query_text == "":
-    matching_idx = len(query_df) * [True]
-else:
-    if selected_input_type == "word":
-        matching_idx = query_df["word"] == query_text
-    else:  #row
-        row_text = query_df["text"].loc[query_text]
-        matching_idx = query_df["text"] == row_text
-    viz_df = query_df[matching_idx]
-    if boolean_text_display:
-        text_display = st.write(f"{row_text}")
-    st.write(f"Results: {len(viz_df)}")
-viz_df["X"] = lower_dim_data[matching_idx,0]
-viz_df["Y"] = lower_dim_data[matching_idx,1]
-viz_df.dropna(inplace=True)
+viz_df_bert["X"] = lower_dim_data_bert[matching_idx_bert,0]
+viz_df_bert["Y"] = lower_dim_data_bert[matching_idx_bert,1]
+#print(matching_idx_bert)
+#print(viz_df_bert.columns)
+#print(viz_df_bert["X"])
+#viz_df_bert.dropna(inplace=True)
+
+viz_df_roberta["X"] = lower_dim_data_roberta[matching_idx_roberta,0]
+viz_df_roberta["Y"] = lower_dim_data_roberta[matching_idx_roberta,1]
+#viz_df_roberta.dropna(inplace=True)
 
 
-chart = alt.Chart(viz_df).mark_point(size=50, filled=True).encode(
-    alt.X("X", scale=alt.Scale(domain=(X_LIM_MIN, X_LIM_MAX))),
-    alt.Y("Y", scale=alt.Scale(domain=(Y_LIM_MIN, Y_LIM_MAX))),
-    color="label",
-    tooltip=['word', 'label', 'text']
-).interactive()
+
+st.write(f"Results: {len(matching_idx_bert)}")
+st.write(f"Results: {len(matching_idx_roberta)}")
+
+#print(matching_idx_roberta)
 
 
-st.altair_chart(chart, use_container_width=True)
-st.write(viz_df.head(SAMPLES_TO_DISPALY))
+st.write(f"BERT Results: {len(viz_df_bert)}")
+
+if len(viz_df_bert) > 0:
+    print(viz_df_bert)
+    chart_bert = alt.Chart(viz_df_bert).mark_point(size=50, filled=True).encode(
+        alt.X("X", scale=alt.Scale(domain=(X_LIM_MIN, X_LIM_MAX))),
+        alt.Y("Y", scale=alt.Scale(domain=(Y_LIM_MIN, Y_LIM_MAX))),
+        color="label",
+        tooltip=['word', 'label', 'text']
+    ).interactive()
+    st.altair_chart(chart_bert, use_container_width=True)
+
+st.write(f"roberta Results: {len(viz_df_roberta)}")
+if len(viz_df_roberta) > 0:
+    chart_roberta = alt.Chart(viz_df_roberta).mark_point(size=50, filled=True).encode(
+        alt.X("X", scale=alt.Scale(domain=(X_LIM_MIN, X_LIM_MAX))),
+        alt.Y("Y", scale=alt.Scale(domain=(Y_LIM_MIN, Y_LIM_MAX))),
+        color="label",
+        tooltip=['word', 'label', 'text']
+    ).interactive()
+    st.altair_chart(chart_roberta, use_container_width=True)
+
+
+
+
+
+st.write(viz_df_bert.head(SAMPLES_TO_DISPALY))
+st.write(viz_df_roberta.head(SAMPLES_TO_DISPALY))
+

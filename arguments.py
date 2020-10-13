@@ -4,8 +4,8 @@ import argparse
 def get_params():
     parser = argparse.ArgumentParser(description="PyTorch exaplainable sentiment analysis")
     parser.add_argument("--batch-size", type=int, default=128)
-    parser.add_argument("--epochs", type=int, default=5)
-    parser.add_argument('--freeze-bert', action='store_true', help='fine tunes the bert layers')
+    parser.add_argument("--epochs", type=int, default=2)
+    parser.add_argument('--freeze-bert', action='store_true', help='fine tunes the bert layers', default=False)
     parser.add_argument('--random-weights', action='store_true', help='fine tunes the bert layers')
     parser.add_argument("--weight-decay", type=float, default=1e-3)
     parser.add_argument("--learning-rate", type=float, default=1e-4)

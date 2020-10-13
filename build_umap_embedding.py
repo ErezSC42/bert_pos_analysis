@@ -6,6 +6,7 @@ import pandas as pd
 
 
 MODEL_LIST = ['bert', 'roberta']
+#MODEL_LIST = ['bert']
 
 if __name__ == '__main__':
     for model_name in MODEL_LIST:
