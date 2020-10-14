@@ -1,7 +1,6 @@
 import os
-import random
-import warnings
 import pickle
+import warnings
 import altair as alt
 import streamlit as st
 import streamlit_theme as stt
@@ -79,10 +78,12 @@ chosen_bert_layer = st.sidebar.slider(
     value=4
 )
 
-# chosen_model = st.sidebar.radio(
-#     "Choose Model:",
-#     ("roberta-base", "bert-base")
-# )
+
+labels_to_use = st.sidebar.multiselect(
+    "Select POS labels:",
+    options=LABELS,
+    default=LABELS
+)
 
 
 query_df_bert, lower_dim_data_bert = bert_embeddings_dataframes[chosen_bert_layer]
@@ -106,14 +107,19 @@ input_display = "Word" if selected_input_type == "word" else "Row Index"
 if selected_input_type == "row":
     query_text = st.sidebar.number_input(
         label=f"Select {input_display}",
-        value=seed
+        value=seed,
+        max_value=42100,
+        min_value=1
     )
-    row_text = query_df_bert["text"].loc[query_text]
-    matching_idx_bert = query_df_bert["text"] == row_text
-    matching_idx_roberta = query_df_roberta["text"] == row_text
-    st.write(f"{row_text}")
+    row_text_bert = query_df_bert["text"].loc[query_text]
+    row_text_roberta = query_df_roberta["text"].loc[query_text]
+    matching_idx_bert = (query_df_bert["text"] == row_text_bert) & (query_df_bert["label"].isin(labels_to_use))
+    matching_idx_roberta = (query_df_roberta["text"] == row_text_roberta) & (query_df_roberta["label"].isin(labels_to_use))
+    st.write(f"{row_text_bert}")
+
     viz_df_bert = query_df_bert[matching_idx_bert]
     viz_df_roberta = query_df_roberta[matching_idx_roberta]
+
 elif selected_input_type == "word":
     query_text = st.sidebar.text_input(
         label=f"Select {input_display}",
@@ -121,24 +127,25 @@ elif selected_input_type == "word":
         value="",
     )
     if query_text != "":
-        matching_idx_bert = query_df_bert["word"] == query_text
-        matching_idx_roberta = query_df_roberta["word"] == query_text
+        matching_idx_bert = (query_df_bert["word"] == query_text) & (query_df_bert["label"].isin(labels_to_use))
+        matching_idx_roberta = (query_df_roberta["word"] == query_text) & (query_df_roberta["label"].isin(labels_to_use))
         st.write(query_text)
-
         viz_df_bert = query_df_bert[matching_idx_bert]
         viz_df_roberta = query_df_roberta[matching_idx_roberta]
+
     else:
-        matching_idx_bert = len(query_df_bert) * [False]
-        matching_idx_roberta = len(query_df_roberta) * [False]
+        matching_idx_bert = (query_df_bert["word"] == query_text) & (query_df_bert["label"].isin(labels_to_use))
+        matching_idx_roberta = (query_df_roberta["word"] == query_text) & (query_df_roberta["label"].isin(labels_to_use))
         viz_df_bert = query_df_bert[matching_idx_bert]
         viz_df_roberta = query_df_roberta[matching_idx_roberta]
 
 else:  # all
-    matching_idx_bert = len(query_df_bert) * [True]
-    matching_idx_roberta = len(query_df_roberta) * [True]
+    matching_idx_bert = query_df_bert["label"].isin(labels_to_use)
+    matching_idx_roberta = query_df_roberta["label"].isin(labels_to_use)
 
-    viz_df_bert = query_df_bert
+    viz_df_bert = query_df_bert[matching_idx_bert]
     viz_df_roberta = query_df_roberta[matching_idx_roberta]
+
 
 
 viz_df_bert["X"] = lower_dim_data_bert[matching_idx_bert,0]
@@ -164,7 +171,7 @@ if len(viz_df_bert) > 0:
         alt.X("X", scale=alt.Scale(domain=(X_LIM_MIN, X_LIM_MAX))),
         alt.Y("Y", scale=alt.Scale(domain=(Y_LIM_MIN, Y_LIM_MAX))),
         color="label",
-        tooltip=['index','word', 'label', 'text']
+        tooltip=['index','word_offset','word', 'label', 'text']
     ).interactive()
     st.altair_chart(chart_bert, use_container_width=True)
 
@@ -175,7 +182,7 @@ if len(viz_df_roberta) > 0:
         alt.X("X", scale=alt.Scale(domain=(X_LIM_MIN, X_LIM_MAX))),
         alt.Y("Y", scale=alt.Scale(domain=(Y_LIM_MIN, Y_LIM_MAX))),
         color="label",
-        tooltip=['index', 'word', 'label', 'text']
+        tooltip=['index','word_offset', 'word', 'label', 'text']
     ).interactive()
     st.altair_chart(chart_roberta, use_container_width=True)
 

@@ -73,7 +73,7 @@ class BertEmbeddingExtractor():
 
         embedding_df = pd.DataFrame({
             "word": orig_words_list,
-            "label_idx": labels,
+            "label_idx": labels
         })
         vector_df = pd.DataFrame.from_records(contextual_embeddings)
         embedding_df = pd.concat([embedding_df, vector_df], axis=1)

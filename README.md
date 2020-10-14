@@ -321,8 +321,10 @@ The accuracy and micro-average F1 score were chosen to assess performance, as th
 
 ### Results
 As seen below, BERT's 3rd and 4th hidden transformer units yield the best accuracy, thus they learn linguistic knowledge the best. Constant performance decrease can be observed in all of the layers following the fourth one, the last layer having the worst results. 
+#### Bert-base-uncased
 ![linear classifer trainging](images/bert_pos_linear_classifier.png)
-
+#### Roberta-base
+![roberta_linear_classifier_training](images/roberta_pos_linear_classifier.png)
 
 
 #### BERT base 4th layer
