@@ -451,3 +451,9 @@ we suggest and efficient way to implement such an experiment, by using a binary 
     2.4  compare classification metric: if metric(clf(A)) << metric(clf(B)): N = B; else N = A 
   
  In this manner, merely log(768) linear classifiers are needed per BERT layer.
+ 
+ # Conclusion
+ some conclusions of this work:
+ - Earlier layers of Transformer based language models encode linguistic knowledge. In both models that were studied, the fourth layer encoded represented the linguistic knowledge most accurately 
+ - In the dataset tested, most words were composed of a single token, so the way in which multiple token words are aggregated are mostly insignificant
+ - Some neurons in a single layer are more important then others in linguistic knowledge representaion, thus there is a noticable redundancy.
