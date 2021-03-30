@@ -434,24 +434,6 @@ Top 10 fourth layer neurons:
 | 102 |           0.00352393 |
 | 379 |           0.00333805 |
 
-### Other Approaches
-Another way to study the importance of a single neuron for POS tagging, is to train classifiers based on a single feature.
-Such a task is computationally inefficient, as there are potentially 12*768=9216 classifiers to test. 
-A different approach would be to start with a full classifier (768 neurons), and to remove neurons until the classification performance drops significantly. 
-we suggest and efficient way to implement such an experiment, by using a binary search to isolate neurons affecting classificatin metrics:
-1. N=768 neurons
-2. while N > threshold:
-    
-    2.1. divide N neurons to two groups; A, B with N/2 neurons each. neurons can be divided randomly or by some statistic (std, variance, correlation,etc...)
-    
-    2.2. train linear classifier on A; clf(A)
-    
-    2.3. train linear classifier on B; clf(B)
-    
-    2.4  compare classification metric: if metric(clf(A)) << metric(clf(B)): N = B; else N = A 
-  
- In this manner, merely log(768) linear classifiers are needed per BERT layer.
- 
  # Conclusion
  some conclusions of this work:
  - Earlier layers of Transformer based language models encode linguistic knowledge. In both models that were studied, the fourth layer encoded represented the linguistic knowledge most accurately 
